@@ -1,98 +1,88 @@
-# LicenseLab v3.1
+# LicenseLab v4
 
-## One-line install, update, and launch
+LicenseLab is a compact Windows and Microsoft Office technician toolkit.
 
-After the GitHub repository is public and these files are pushed, run:
+## Recommended launch
+
+Open **PowerShell or Windows Terminal as Administrator**, then run:
 
 ```powershell
 irm https://raw.githubusercontent.com/T3ND41/LicenseLab/main/bootstrap.ps1 | iex
 ```
 
-The same command can be used later to update LicenseLab.
+LicenseLab v4 runs entirely in the PowerShell window you opened.
 
-It installs the toolkit into:
+It does **not**:
+- install itself under AppData before launch
+- open a BAT file
+- open a second CMD window
+- self-elevate into another console
+- close your current PowerShell window
 
-`%LOCALAPPDATA%\LicenseLab`
+The bootstrap downloads `LicenseLab.ps1`, checks it with PowerShell's parser, and only executes it when no parse errors are found.
 
-It also creates:
-- a desktop shortcut when permitted
-- `Update-LicenseLab.cmd`
-- persistent Logs
-- persistent ServiceHistory
-- persistent GeneratedConfigs
-- the `Tools\ODT` folder
+## Main sections
+
+1. **Windows**
+   - activation status
+   - install an authorized product key and request normal activation
+   - edition discovery/change
+   - remove the installed key
+
+2. **Office**
+   - installation and licensing status
+   - install an authorized Office key
+   - request normal activation
+   - remove an installed Office key
+
+3. **Install / Modify**
+   - Office Deployment Tool workflows
+   - product/version selection
+   - app selection
+   - 32/64-bit migration
+   - update channels
+   - offline source download
+   - Click-to-Run removal
+
+4. **License & Timer**
+   - Windows, Office, or both
+   - 30 minutes, 2 hours, 1 day, 3 days, 7 days
+   - custom minutes/hours/days
+   - scheduled legitimate key removal/deactivation
+   - view/cancel timer jobs
+
+5. **Repair**
+   - licensing services
+   - time sync
+   - DISM
+   - SFC
+   - Windows Activation settings
+   - Office repair shortcut
+
+6. **Technician**
+   - system information
+   - diagnostic reports
+   - service history
+   - logs
 
 ## Office Deployment Tool
 
-Place Microsoft's official ODT `setup.exe` at:
+When using Install / Modify, LicenseLab looks for Microsoft ODT `setup.exe` and can open Microsoft's official ODT download page if it is not available.
 
-`%LOCALAPPDATA%\LicenseLab\Tools\ODT\setup.exe`
+Generated ODT XML files are stored under:
 
-## Main toolkit
+`C:\ProgramData\LicenseLab\Configs`
 
-LicenseLab organizes the technician workflow into six sections:
+## Service timers
 
-1. Windows
-2. Office
-3. Install / Modify
-4. License & Timer
-5. Repair
-6. Technician
+Timers use Windows Task Scheduler.
 
-### Windows
-- activation status
-- install an authorized product key and request normal activation
-- supported Windows edition discovery
-- change/upgrade Windows edition with a valid target-edition key
-- remove installed Windows product key
+They control when LicenseLab removes the installed product key/configuration. They do not alter Microsoft's entitlement lifetime.
 
-### Office
-- installation/version/channel/license status
-- install an authorized Office product key and request normal activation
-- remove an Office product key
-- Office deployment and app/version management
-
-### Install / Modify
-- install or switch Office product/version
-- add/remove Office apps
-- choose Word, Excel, PowerPoint, Outlook, Access, OneNote, Publisher, Teams, OneDrive
-- 32-bit <-> 64-bit migration
-- update-channel changes
-- source download for offline/later deployment
-- Click-to-Run Office removal
-- Microsoft Office Customization Tool
-
-### License & Timer
-Choose Windows, Office, or both, then select:
-- 30 minutes
-- 2 hours
-- 1 day
-- 3 days
-- 7 days
-- custom minutes
-- custom hours
-- custom days
-
-At expiry, LicenseLab performs the configured legitimate key-removal/deactivation action using Windows Task Scheduler.
-
-### Repair
-- licensing-service checks
-- time/date synchronization
-- DISM ScanHealth
-- DISM RestoreHealth
-- SFC
-- Windows Activation settings
-- Office repair
-
-### Technician
-- system information
-- customer diagnostic reports
-- service history
-- logs
-- generated Office deployment configs
+A PC with a Windows digital entitlement may automatically reactivate after product-key removal.
 
 ## Licensing scope
 
-LicenseLab supports legitimate Windows and Office servicing, deployment, authorized key management, scheduled deactivation, diagnostics, repair, and reporting.
+LicenseLab is for legitimate servicing using licenses, subscriptions, product keys, digital entitlements, and organizational activation infrastructure you are authorized to manage.
 
-It does not contain activation cracks, embedded Microsoft product keys, HWID bypasses, Ohook, TSforge, or unauthorized KMS activation services.
+It does not contain activation cracks, HWID bypasses, Ohook, TSforge, or unauthorized/public KMS activation.
