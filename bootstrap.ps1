@@ -9,6 +9,10 @@ try {
         throw 'The downloaded LicenseLab script was empty or incomplete.'
     }
 
+    if ($code -notmatch 'LicenseLab v4\.2' -or $code -notmatch 'LL_InvokeFunction') {
+        throw 'The downloaded script is not the required LicenseLab v4.2 alias-proof build. Retry with a fresh cache-busting URL.'
+    }
+
     $tokens = $null
     $parseErrors = $null
     [System.Management.Automation.Language.Parser]::ParseInput($code,[ref]$tokens,[ref]$parseErrors) | Out-Null
