@@ -1,0 +1,21 @@
+LICENSELAB v3.1 - SERVICE NOTICE
+
+Designed for legitimate technician servicing of Windows and Microsoft Office.
+
+Included:
+- licensing status
+- authorized key installation/removal
+- edition/product changes supported by Microsoft tools
+- Office deployment and app management
+- scheduled legitimate deactivation
+- diagnostics, repair, reports, logs
+
+Not included:
+- activation cracks or bypasses
+- HWID activation bypass
+- Ohook
+- TSforge
+- unauthorized/public KMS activation
+- embedded Microsoft product keys
+
+Use only on systems you own or have explicit authorization to service.
