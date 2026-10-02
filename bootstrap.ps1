@@ -1,6 +1,8 @@
 $ErrorActionPreference = 'Stop'
 $RepoRaw = 'https://raw.githubusercontent.com/T3ND41/LicenseLab/main'
 $InstallDir = Join-Path $env:LOCALAPPDATA 'LicenseLab'
+$CacheBust = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+$NoCacheHeaders = @{ 'Cache-Control'='no-cache, no-store, max-age=0'; 'Pragma'='no-cache' }
 
 function Test-Admin {
     $id = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -10,7 +12,7 @@ function Test-Admin {
 
 if (-not (Test-Admin)) {
     $self = Join-Path $env:TEMP 'LicenseLab-bootstrap.ps1'
-    Invoke-WebRequest -UseBasicParsing "$RepoRaw/bootstrap.ps1" -OutFile $self
+    Invoke-WebRequest -UseBasicParsing -Headers $NoCacheHeaders -Uri "$RepoRaw/bootstrap.ps1?v=$CacheBust" -OutFile $self
     Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$self`""
     return
 }
@@ -43,16 +45,19 @@ $files = @(
 )
 
 foreach ($file in $files) {
-    $url = "$RepoRaw/$file"
+    $url = "$RepoRaw/$file?v=$CacheBust"
     $dest = Join-Path $InstallDir ($file -replace '/', '\')
+    $tmp  = "$dest.download"
     New-Item -ItemType Directory -Path (Split-Path -Parent $dest) -Force | Out-Null
-    Write-Host "Downloading $file..."
-    Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $dest
+    Write-Host "Downloading fresh copy of $file..."
+    if (Test-Path $tmp)  { Remove-Item $tmp -Force -ErrorAction SilentlyContinue }
+    Invoke-WebRequest -UseBasicParsing -Headers $NoCacheHeaders -Uri $url -OutFile $tmp
+    Move-Item -Path $tmp -Destination $dest -Force
 }
 
 $updateCmd = Join-Path $InstallDir 'Update-LicenseLab.cmd'
 '@echo off' | Set-Content $updateCmd -Encoding ASCII
-'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/T3ND41/LicenseLab/main/bootstrap.ps1 | iex"' | Add-Content $updateCmd -Encoding ASCII
+'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$u=''https://raw.githubusercontent.com/T3ND41/LicenseLab/main/bootstrap.ps1?v=''+[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds(); iex (irm $u -Headers @{''Cache-Control''=''no-cache''})"' | Add-Content $updateCmd -Encoding ASCII
 
 try {
     $desktop = [Environment]::GetFolderPath('Desktop')
@@ -68,6 +73,13 @@ try {
 Write-Host ""
 Write-Host "[+] LicenseLab installed/updated:" -ForegroundColor Green
 Write-Host "    $InstallDir"
+# Verify that the newly downloaded toolkit is the patched build before launch.
+$mainScript = Join-Path $InstallDir 'LicenseServiceToolkit.ps1'
+if (-not (Select-String -Path $mainScript -SimpleMatch 'LicenseLab v3.1.1' -Quiet)) {
+    throw "Fresh LicenseLab v3.1.1 was not downloaded. Delete $InstallDir and run the bootstrap again."
+}
+
+Write-Host "[+] Verified patched build: LicenseLab v3.1.1" -ForegroundColor Green
 Write-Host "[+] Launching..." -ForegroundColor Green
 
 Start-Process -FilePath (Join-Path $InstallDir 'Run-LicenseServiceToolkit.bat')
