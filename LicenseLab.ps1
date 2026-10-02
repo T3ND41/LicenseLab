@@ -2,7 +2,7 @@
 Set-StrictMode -Version 2
 $ErrorActionPreference='Continue'
 # v4 runs entirely in the current PowerShell session. It does not self-elevate or spawn a launcher window.
-$Root=Split-Path -Parent $MyInvocation.MyCommand.Path
+$Root=Join-Path $env:ProgramData 'LicenseLab'
 $Logs=Join-Path $Root 'Logs';$Cfg=Join-Path $Root 'GeneratedConfigs';$Hist=Join-Path $Root 'ServiceHistory';$Odt=Join-Path $Root 'Tools\ODT\setup.exe'
 @($Logs,$Cfg,$Hist,(Split-Path $Odt -Parent))|%{New-Item -ItemType Directory -Force -Path $_|Out-Null}
 function P{Write-Host '';[void](Read-Host 'Press Enter to continue')}
