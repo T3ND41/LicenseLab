@@ -37,7 +37,7 @@ foreach ($folder in $folders) {
 }
 
 $files = @(
-    'LicenseServiceToolkit.ps1',
+    'LicenseLab-v3.1.2.ps1',
     'Run-LicenseServiceToolkit.bat',
     'README.md',
     'NOTICE.txt',
@@ -74,12 +74,12 @@ Write-Host ""
 Write-Host "[+] LicenseLab installed/updated:" -ForegroundColor Green
 Write-Host "    $InstallDir"
 # Verify that the newly downloaded toolkit is the patched build before launch.
-$mainScript = Join-Path $InstallDir 'LicenseServiceToolkit.ps1'
-if (-not (Select-String -Path $mainScript -SimpleMatch 'LicenseLab v3.1.1' -Quiet)) {
-    throw "Fresh LicenseLab v3.1.1 was not downloaded. Delete $InstallDir and run the bootstrap again."
+$mainScript = Join-Path $InstallDir 'LicenseLab-v3.1.2.ps1'
+if (-not (Select-String -Path $mainScript -SimpleMatch 'LicenseLab v3.1.2' -Quiet)) {
+    throw "Fresh LicenseLab v3.1.2 was not downloaded. Delete $InstallDir and run the bootstrap again."
 }
 
-Write-Host "[+] Verified patched build: LicenseLab v3.1.1" -ForegroundColor Green
+Write-Host "[+] Verified patched build: LicenseLab v3.1.2" -ForegroundColor Green
 Write-Host "[+] Launching..." -ForegroundColor Green
 
 Start-Process -FilePath (Join-Path $InstallDir 'Run-LicenseServiceToolkit.bat')
