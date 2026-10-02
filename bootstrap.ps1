@@ -64,7 +64,8 @@ try {
     $shortcutPath = Join-Path $desktop 'LicenseLab.lnk'
     $shell = New-Object -ComObject WScript.Shell
     $shortcut = $shell.CreateShortcut($shortcutPath)
-    $shortcut.TargetPath = Join-Path $InstallDir 'Run-LicenseServiceToolkit.bat'
+    $shortcut.TargetPath = "$env:SystemRoot\System32\cmd.exe"
+    $shortcut.Arguments = '/k ""' + (Join-Path $InstallDir 'Run-LicenseServiceToolkit.bat') + '""'
     $shortcut.WorkingDirectory = $InstallDir
     $shortcut.Description = 'LicenseLab Windows and Office service toolkit'
     $shortcut.Save()
@@ -82,4 +83,5 @@ if (-not (Select-String -Path $mainScript -SimpleMatch 'LicenseLab v3.1.2' -Quie
 Write-Host "[+] Verified patched build: LicenseLab v3.1.2" -ForegroundColor Green
 Write-Host "[+] Launching..." -ForegroundColor Green
 
-Start-Process -FilePath (Join-Path $InstallDir 'Run-LicenseServiceToolkit.bat')
+$launcher = Join-Path $InstallDir 'Run-LicenseServiceToolkit.bat'
+Start-Process -FilePath "$env:SystemRoot\System32\cmd.exe" -ArgumentList @('/k',('"' + $launcher + '"')) -WorkingDirectory $InstallDir
