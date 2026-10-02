@@ -1,0 +1,48 @@
+name: PowerShell parse check
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '**.ps1'
+      - '.github/workflows/powershell-parse.yml'
+  pull_request:
+    paths:
+      - '**.ps1'
+      - '.github/workflows/powershell-parse.yml'
+  workflow_dispatch:
+
+jobs:
+  parse:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse LicenseLab scripts with Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $failed = $false
+          Get-ChildItem -Path . -Filter *.ps1 -Recurse | ForEach-Object {
+              Write-Host "Parsing $($_.FullName)"
+              $tokens = $null
+              $errors = $null
+              [System.Management.Automation.Language.Parser]::ParseFile(
+                  $_.FullName,
+                  [ref]$tokens,
+                  [ref]$errors
+              ) | Out-Null
+
+              if ($errors.Count -gt 0) {
+                  $failed = $true
+                  foreach ($err in $errors) {
+                      Write-Error ("{0}:{1}:{2} {3}" -f $_.FullName,$err.Extent.StartLineNumber,$err.Extent.StartColumnNumber,$err.Message)
+                  }
+              }
+          }
+
+          if ($failed) {
+              exit 1
+          }
+
+          Write-Host "All PowerShell files parsed successfully."
