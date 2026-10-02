@@ -44,7 +44,72 @@ function MakeCfg($prod,$arch,$chan,$apps,$migrate=$false){
     $x | Set-Content $p -Encoding UTF8
     return $p
 }
-function InstallModify{H 'INSTALL / MODIFY';if(!(NeedODT)){return};Write-Host '[1] Install/switch product [2] Add/remove apps [3] Migrate 32/64 [4] Change channel [5] Remove C2R Office';switch(Read-Host 'Select'){'1'{$p=Product;$a=if((Read-Host 'Arch [1]64 [2]32')-eq'2'){'32'}else{'64'};$c=Channel;$cfg=MakeCfg $p $a $c @(Apps);Start-Process $Odt -ArgumentList "/configure `"$cfg`"" -Wait;Log 'Office install/switch'}'2'{$c=C2R;if(!$c){Write-Host 'C2R Office not detected.';P;return};$p=($c.ProductReleaseIds-split',')[0];$a=if($c.Platform-match'x86'){'32'}else{'64'};$cfg=MakeCfg $p $a 'Current' @(Apps);Start-Process $Odt -ArgumentList "/configure `"$cfg`"" -Wait;Log 'Office apps modified'}'3'{$c=C2R;if(!$c){Write-Host 'C2R Office not detected.';P;return};$p=($c.ProductReleaseIds-split',')[0];$a=if((Read-Host 'Target arch [1]64 [2]32')-eq'2'){'32'}else{'64'};$cfg=MakeCfg $p $a (Channel) @(Apps) $true;Start-Process $Odt -ArgumentList "/configure `"$cfg`"" -Wait;Log 'Office architecture migration'}'4'{$ch=Channel;$cfg=Join-Path $Cfg 'channel.xml';@('<Configuration>',("  <Updates Enabled=\"TRUE\" Channel=\"$ch\" />"),'</Configuration>')|Set-Content $cfg;Start-Process $Odt -ArgumentList "/configure `"$cfg`"" -Wait;Log 'Office channel change'}'5'{if((Read-Host 'Type REMOVE-OFFICE')-ceq'REMOVE-OFFICE'){$cfg=Join-Path $Cfg 'remove.xml';@('<Configuration>','  <Remove All="TRUE" />','  <Display Level="Full" AcceptEULA="TRUE" />','</Configuration>')|Set-Content $cfg;Start-Process $Odt -ArgumentList "/configure `"$cfg`"" -Wait;Log 'Office removed'}}};P}
+function InstallModify{
+    H 'INSTALL / MODIFY'
+    if(!(NeedODT)){return}
+
+    Write-Host '[1] Install/switch product'
+    Write-Host '[2] Add/remove apps'
+    Write-Host '[3] Migrate 32/64'
+    Write-Host '[4] Change channel'
+    Write-Host '[5] Remove C2R Office'
+    Write-Host '[0] Back'
+
+    switch(Read-Host 'Select'){
+        '1'{
+            $p=Product
+            $a=if((Read-Host 'Arch [1]64 [2]32') -eq '2'){'32'}else{'64'}
+            $ch=Channel
+            $cfg=MakeCfg $p $a $ch @(Apps)
+            Start-Process $Odt -ArgumentList @('/configure',$cfg) -Wait
+            Log 'Office install/switch'
+        }
+        '2'{
+            $c=C2R
+            if(!$c){Write-Host 'C2R Office not detected.';P;return}
+            $p=($c.ProductReleaseIds -split ',')[0]
+            $a=if($c.Platform -match 'x86'){'32'}else{'64'}
+            $cfg=MakeCfg $p $a 'Current' @(Apps)
+            Start-Process $Odt -ArgumentList @('/configure',$cfg) -Wait
+            Log 'Office apps modified'
+        }
+        '3'{
+            $c=C2R
+            if(!$c){Write-Host 'C2R Office not detected.';P;return}
+            $p=($c.ProductReleaseIds -split ',')[0]
+            $a=if((Read-Host 'Target arch [1]64 [2]32') -eq '2'){'32'}else{'64'}
+            $cfg=MakeCfg $p $a (Channel) @(Apps) $true
+            Start-Process $Odt -ArgumentList @('/configure',$cfg) -Wait
+            Log 'Office architecture migration'
+        }
+        '4'{
+            $ch=Channel
+            $cfg=Join-Path $Cfg 'channel.xml'
+            @(
+                '<Configuration>',
+                ('  <Updates Enabled="TRUE" Channel="{0}" />' -f $ch),
+                '</Configuration>'
+            ) | Set-Content $cfg -Encoding UTF8
+            Start-Process $Odt -ArgumentList @('/configure',$cfg) -Wait
+            Log 'Office channel change'
+        }
+        '5'{
+            if((Read-Host 'Type REMOVE-OFFICE') -ceq 'REMOVE-OFFICE'){
+                $cfg=Join-Path $Cfg 'remove.xml'
+                @(
+                    '<Configuration>',
+                    '  <Remove All="TRUE" />',
+                    '  <Display Level="Full" AcceptEULA="TRUE" />',
+                    '</Configuration>'
+                ) | Set-Content $cfg -Encoding UTF8
+                Start-Process $Odt -ArgumentList @('/configure',$cfg) -Wait
+                Log 'Office removed'
+            }
+        }
+        '0'{return}
+    }
+    P
+}
 function Duration{Write-Host '[1]30m [2]2h [3]1d [4]3d [5]7d [6]custom minutes [7]custom hours [8]custom days';switch(Read-Host 'Duration'){'1'{(Get-Date).AddMinutes(30)}'2'{(Get-Date).AddHours(2)}'3'{(Get-Date).AddDays(1)}'4'{(Get-Date).AddDays(3)}'5'{(Get-Date).AddDays(7)}'6'{(Get-Date).AddMinutes([double](Read-Host 'Minutes'))}'7'{(Get-Date).AddHours([double](Read-Host 'Hours'))}'8'{(Get-Date).AddDays([double](Read-Host 'Days'))}default{$null}}}
 function Timer{
     H 'LICENSE & TIMER'
