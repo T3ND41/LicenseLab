@@ -24,7 +24,7 @@ $script:LL_InvokeFunction = {
         [Parameter(Mandatory=$true)][string]$Name,
         [object[]]$Arguments = @()
     )
-    $functionItem = Microsoft.PowerShell.Management\Get-Item -LiteralPath ("Function:\\{0}" -f $Name) -ErrorAction Stop
+    $functionItem = Microsoft.PowerShell.Management\Get-Item -LiteralPath ("Function:\{0}" -f $Name) -ErrorAction Stop
     & $functionItem @Arguments
 }
 function Test-LicenseLabAdmin{$i=[Security.Principal.WindowsIdentity]::GetCurrent();$p=New-Object Security.Principal.WindowsPrincipal($i);$p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)}
@@ -208,8 +208,8 @@ $script:LL_FunctionNames = @(
     'Duration','Timer','Repair','Tech','WinMenu','OfficeMenu','Main'
 )
 foreach($name in $script:LL_FunctionNames){
-    if(Test-Path -LiteralPath ("Alias:\\{0}" -f $name)){
-        Remove-Item -LiteralPath ("Alias:\\{0}" -f $name) -Force -ErrorAction SilentlyContinue
+    if(Test-Path -LiteralPath ("Alias:\{0}" -f $name)){
+        Remove-Item -LiteralPath ("Alias:\{0}" -f $name) -Force -ErrorAction SilentlyContinue
     }
 }
 
