@@ -5,7 +5,7 @@ title LicenseLab v3.1.2
 net session >nul 2>&1
 if not "%errorlevel%"=="0" (
     echo Requesting Administrator privileges...
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath 'cmd.exe' -Verb RunAs -ArgumentList '/k ""%~f0""'"
     exit /b
 )
 
@@ -23,6 +23,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT%"
 set "RC=%errorlevel%"
 
 echo.
-if not "%RC%"=="0" echo Toolkit exited with code %RC%.
-pause
-exit /b %RC%
+if not "%RC%"=="0" (
+    echo.
+    echo [ERROR] LicenseLab exited with code %RC%.
+    echo The window will remain open so you can copy the error.
+)
+echo.
+echo Type EXIT to close this window when finished.
+cmd /k
+
