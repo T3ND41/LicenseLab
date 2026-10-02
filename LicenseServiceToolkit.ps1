@@ -5,7 +5,7 @@ $Root=Split-Path -Parent $MyInvocation.MyCommand.Path
 $Logs=Join-Path $Root 'Logs';$Cfg=Join-Path $Root 'GeneratedConfigs';$Hist=Join-Path $Root 'ServiceHistory';$Odt=Join-Path $Root 'Tools\ODT\setup.exe'
 @($Logs,$Cfg,$Hist,(Split-Path $Odt -Parent))|%{New-Item -ItemType Directory -Force -Path $_|Out-Null}
 function P{Write-Host '';[void](Read-Host 'Press Enter to continue')}
-function H($s=''){Clear-Host;Write-Host '========================================' -ForegroundColor Cyan;Write-Host '              LicenseLab v3.1          ' -ForegroundColor Cyan;Write-Host '========================================' -ForegroundColor Cyan;if($s){Write-Host "`n$s" -ForegroundColor Yellow};Write-Host ''}
+function H($s=''){Clear-Host;Write-Host '========================================' -ForegroundColor Cyan;Write-Host '              LicenseLab v3.1.1          ' -ForegroundColor Cyan;Write-Host '========================================' -ForegroundColor Cyan;if($s){Write-Host "`n$s" -ForegroundColor Yellow};Write-Host ''}
 function Admin{$i=[Security.Principal.WindowsIdentity]::GetCurrent();$p=New-Object Security.Principal.WindowsPrincipal($i);$p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)}
 function Log($a,$r='OK'){$f=Join-Path $Hist ("history-{0}.csv"-f(Get-Date -Format yyyy-MM));if(!(Test-Path $f)){'"Time","PC","Action","Result"'|Set-Content $f};('"{0}","{1}","{2}","{3}"'-f(Get-Date -Format s),$env:COMPUTERNAME,$a.Replace('"','""'),$r.Replace('"','""'))|Add-Content $f}
 function OSPP{$c=@("$env:ProgramFiles\Microsoft Office\Office16\OSPP.VBS","$env:ProgramFiles\Microsoft Office\root\Office16\OSPP.VBS","${env:ProgramFiles(x86)}\Microsoft Office\Office16\OSPP.VBS","${env:ProgramFiles(x86)}\Microsoft Office\root\Office16\OSPP.VBS");foreach($x in $c){if($x -and(Test-Path $x)){return $x}}$null}
@@ -23,10 +23,68 @@ function NeedODT{if(Test-Path $Odt){return $true};Write-Host "ODT setup.exe miss
 function Apps{$all=@('Access','Excel','OneDrive','OneNote','Outlook','PowerPoint','Publisher','Teams','Word');Write-Host '[1] Full [2] Basic [3] Standard [4] Business [5] Custom';switch(Read-Host 'Preset'){'2'{@('Word','Excel','PowerPoint')}'3'{@('Word','Excel','PowerPoint','Outlook','OneNote')}'4'{@('Word','Excel','PowerPoint','Outlook','OneNote','Teams','OneDrive')}'5'{$s=@();foreach($a in $all){if((Read-Host "Keep $a? Y/N")-match'^(?i)y'){$s+=$a}};$s}default{$all}}}
 function Product{Write-Host '[1] M365 Enterprise [2] M365 Business [3] LTSC ProPlus 2024 [4] LTSC Standard 2024 [5] LTSC ProPlus 2021';switch(Read-Host 'Product'){'2'{'O365BusinessRetail'}'3'{'ProPlus2024Volume'}'4'{'Standard2024Volume'}'5'{'ProPlus2021Volume'}default{'O365ProPlusRetail'}}}
 function Channel{Write-Host '[1] Current [2] MonthlyEnterprise [3] SemiAnnual [4] PerpetualVL2024 [5] PerpetualVL2021';switch(Read-Host 'Channel'){'2'{'MonthlyEnterprise'}'3'{'SemiAnnual'}'4'{'PerpetualVL2024'}'5'{'PerpetualVL2021'}default{'Current'}}}
-function MakeCfg($prod,$arch,$chan,$apps,$migrate=$false){$all=@('Access','Excel','OneDrive','OneNote','Outlook','PowerPoint','Publisher','Teams','Word');$p=Join-Path $Cfg ("office-{0}.xml"-f(Get-Date -Format yyyyMMddHHmmss));$mig=if($migrate){' MigrateArch="TRUE"'}else{''};$x=@('<Configuration>',("  <Add OfficeClientEdition=\"$arch\" Channel=\"$chan\"$mig>"),("    <Product ID=\"$prod\">"),'      <Language ID="MatchInstalled" TargetProduct="All" />');foreach($a in $all|?{$apps-notcontains$_}){$x+="      <ExcludeApp ID=\"$a\" />"};$x+=@('    </Product>','  </Add>','  <Updates Enabled="TRUE" />','  <Display Level="Full" AcceptEULA="TRUE" />','</Configuration>');$x|Set-Content $p -Encoding UTF8;$p}
+function MakeCfg($prod,$arch,$chan,$apps,$migrate=$false){
+    $all=@('Access','Excel','OneDrive','OneNote','Outlook','PowerPoint','Publisher','Teams','Word')
+    $p=Join-Path $Cfg ("office-{0}.xml" -f (Get-Date -Format yyyyMMddHHmmss))
+    $mig=if($migrate){' MigrateArch="TRUE"'}else{''}
+
+    $x=@()
+    $x+='<Configuration>'
+    $x+=('  <Add OfficeClientEdition="{0}" Channel="{1}"{2}>' -f $arch,$chan,$mig)
+    $x+=('    <Product ID="{0}">' -f $prod)
+    $x+='      <Language ID="MatchInstalled" TargetProduct="All" />'
+    foreach($a in ($all | Where-Object { $apps -notcontains $_ })){
+        $x+=('      <ExcludeApp ID="{0}" />' -f $a)
+    }
+    $x+='    </Product>'
+    $x+='  </Add>'
+    $x+='  <Updates Enabled="TRUE" />'
+    $x+='  <Display Level="Full" AcceptEULA="TRUE" />'
+    $x+='</Configuration>'
+    $x | Set-Content $p -Encoding UTF8
+    return $p
+}
 function InstallModify{H 'INSTALL / MODIFY';if(!(NeedODT)){return};Write-Host '[1] Install/switch product [2] Add/remove apps [3] Migrate 32/64 [4] Change channel [5] Remove C2R Office';switch(Read-Host 'Select'){'1'{$p=Product;$a=if((Read-Host 'Arch [1]64 [2]32')-eq'2'){'32'}else{'64'};$c=Channel;$cfg=MakeCfg $p $a $c @(Apps);Start-Process $Odt -ArgumentList "/configure `"$cfg`"" -Wait;Log 'Office install/switch'}'2'{$c=C2R;if(!$c){Write-Host 'C2R Office not detected.';P;return};$p=($c.ProductReleaseIds-split',')[0];$a=if($c.Platform-match'x86'){'32'}else{'64'};$cfg=MakeCfg $p $a 'Current' @(Apps);Start-Process $Odt -ArgumentList "/configure `"$cfg`"" -Wait;Log 'Office apps modified'}'3'{$c=C2R;if(!$c){Write-Host 'C2R Office not detected.';P;return};$p=($c.ProductReleaseIds-split',')[0];$a=if((Read-Host 'Target arch [1]64 [2]32')-eq'2'){'32'}else{'64'};$cfg=MakeCfg $p $a (Channel) @(Apps) $true;Start-Process $Odt -ArgumentList "/configure `"$cfg`"" -Wait;Log 'Office architecture migration'}'4'{$ch=Channel;$cfg=Join-Path $Cfg 'channel.xml';@('<Configuration>',("  <Updates Enabled=\"TRUE\" Channel=\"$ch\" />"),'</Configuration>')|Set-Content $cfg;Start-Process $Odt -ArgumentList "/configure `"$cfg`"" -Wait;Log 'Office channel change'}'5'{if((Read-Host 'Type REMOVE-OFFICE')-ceq'REMOVE-OFFICE'){$cfg=Join-Path $Cfg 'remove.xml';@('<Configuration>','  <Remove All="TRUE" />','  <Display Level="Full" AcceptEULA="TRUE" />','</Configuration>')|Set-Content $cfg;Start-Process $Odt -ArgumentList "/configure `"$cfg`"" -Wait;Log 'Office removed'}}};P}
 function Duration{Write-Host '[1]30m [2]2h [3]1d [4]3d [5]7d [6]custom minutes [7]custom hours [8]custom days';switch(Read-Host 'Duration'){'1'{(Get-Date).AddMinutes(30)}'2'{(Get-Date).AddHours(2)}'3'{(Get-Date).AddDays(1)}'4'{(Get-Date).AddDays(3)}'5'{(Get-Date).AddDays(7)}'6'{(Get-Date).AddMinutes([double](Read-Host 'Minutes'))}'7'{(Get-Date).AddHours([double](Read-Host 'Hours'))}'8'{(Get-Date).AddDays([double](Read-Host 'Days'))}default{$null}}}
-function Timer{H 'LICENSE & TIMER';Write-Host '[1] Windows [2] Office [3] Both';$s=Read-Host 'Scope';$t=Duration;if(!$t){return};$payload="$ErrorActionPreference='SilentlyContinue'`r`n";if($s-eq'1'-or$s-eq'3'){$payload+="cscript.exe //nologo '$env:SystemRoot\System32\slmgr.vbs' /upk`r`ncscript.exe //nologo '$env:SystemRoot\System32\slmgr.vbs' /cpky`r`n"};if($s-eq'2'-or$s-eq'3'){$o=OSPP;if($o){$id=OfficeKeyId $o;if($id){$payload+="cscript.exe //nologo '$o' /unpkey:$id`r`n"}}};$name='LicenseLab_Expire_'+(Get-Date -Format yyyyMMddHHmmss);$payload+="Unregister-ScheduledTask -TaskName '$name' -Confirm:`$false";$enc=[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($payload));$act=New-ScheduledTaskAction -Execute powershell.exe -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand $enc";$tr=New-ScheduledTaskTrigger -Once -At $t;$set=New-ScheduledTaskSettingsSet -StartWhenAvailable;$pr=New-ScheduledTaskPrincipal -UserId SYSTEM -LogonType ServiceAccount -RunLevel Highest;Register-ScheduledTask -TaskName $name -InputObject(New-ScheduledTask -Action $act -Trigger $tr -Settings $set -Principal $pr)|Out-Null;Write-Host "Scheduled for $t" -ForegroundColor Green;Log 'Timer created' $t.ToString();P}
+function Timer{
+    H 'LICENSE & TIMER'
+    Write-Host '[1] Windows [2] Office [3] Both'
+    $s=Read-Host 'Scope'
+    $t=Duration
+    if(!$t){return}
+
+    $payload = '$ErrorActionPreference = ''SilentlyContinue''' + "`r`n"
+
+    if($s -eq '1' -or $s -eq '3'){
+        $payload += ('& "{0}\System32\cscript.exe" //nologo "{0}\System32\slmgr.vbs" /upk' -f $env:SystemRoot) + "`r`n"
+        $payload += ('& "{0}\System32\cscript.exe" //nologo "{0}\System32\slmgr.vbs" /cpky' -f $env:SystemRoot) + "`r`n"
+    }
+
+    if($s -eq '2' -or $s -eq '3'){
+        $o=OSPP
+        if($o){
+            $id=OfficeKeyId $o
+            if($id){
+                $payload += ('& "{0}\System32\cscript.exe" //nologo "{1}" /unpkey:{2}' -f $env:SystemRoot,$o,$id) + "`r`n"
+            }
+        }
+    }
+
+    $name='LicenseLab_Expire_'+(Get-Date -Format yyyyMMddHHmmss)
+    $payload += ('Unregister-ScheduledTask -TaskName "{0}" -Confirm:$false' -f $name)
+
+    $enc=[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($payload))
+    $act=New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand $enc"
+    $tr=New-ScheduledTaskTrigger -Once -At $t
+    $set=New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
+    $pr=New-ScheduledTaskPrincipal -UserId SYSTEM -LogonType ServiceAccount -RunLevel Highest
+    $task=New-ScheduledTask -Action $act -Trigger $tr -Settings $set -Principal $pr
+    Register-ScheduledTask -TaskName $name -InputObject $task -Force | Out-Null
+
+    Write-Host "Scheduled for $t" -ForegroundColor Green
+    Log 'Timer created' $t.ToString()
+    P
+}
 function Repair{while($true){H 'REPAIR';Write-Host '[1] Licensing services [2] Time resync [3] DISM Scan [4] DISM Restore [5] SFC [6] Windows activation settings [7] Office repair [0] Back';switch(Read-Host 'Select'){'1'{foreach($n in @('sppsvc','ClipSVC','LicenseManager')){$s=Get-Service $n -ErrorAction SilentlyContinue;if($s){$s|ft Name,Status,StartType;if($s.Status-ne'Running'){try{Start-Service $n}catch{}}}};P}'2'{w32tm /query /status;w32tm /resync;P}'3'{DISM.exe /Online /Cleanup-Image /ScanHealth;P}'4'{DISM.exe /Online /Cleanup-Image /RestoreHealth;P}'5'{sfc.exe /scannow;P}'6'{Start-Process 'ms-settings:activation'}'7'{Start-Process appwiz.cpl}'0'{return}}}}
 function Tech{while($true){H 'TECHNICIAN';Write-Host '[1] System info [2] Export report [3] Service history [4] Logs [5] Configs [0] Back';switch(Read-Host 'Select'){'1'{Get-ComputerInfo|select WindowsProductName,WindowsVersion,OsBuildNumber,CsManufacturer,CsModel,CsProcessors,CsTotalPhysicalMemory|fl;P}'2'{$f=Join-Path $Logs ("report-{0}.txt"-f(Get-Date -Format yyyyMMddHHmmss));"LicenseLab report $(Get-Date)"|Set-Content $f;cscript.exe //nologo "$env:SystemRoot\System32\slmgr.vbs" /xpr|Add-Content $f;$o=OSPP;if($o){cscript.exe //nologo $o /dstatus|Add-Content $f};Write-Host $f;P}'3'{Get-ChildItem $Hist|ft Name,LastWriteTime;P}'4'{Start-Process explorer.exe $Logs}'5'{Start-Process explorer.exe $Cfg}'0'{return}}}}
 function WinMenu{while($true){H 'WINDOWS';Write-Host '[1] Status [2] Activate [3] Edition [4] Remove key [0] Back';switch(Read-Host 'Select'){'1'{WinStatus}'2'{WinActivate}'3'{WinEdition}'4'{WinRemove}'0'{return}}}}
