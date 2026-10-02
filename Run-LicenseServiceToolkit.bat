@@ -1,6 +1,6 @@
 @echo off
 setlocal
-title LicenseLab v3.1
+title LicenseLab v3.1.2
 
 net session >nul 2>&1
 if not "%errorlevel%"=="0" (
@@ -9,7 +9,7 @@ if not "%errorlevel%"=="0" (
     exit /b
 )
 
-set "SCRIPT=%~dp0LicenseServiceToolkit.ps1"
+set "SCRIPT=%~dp0LicenseLab-v3.1.2.ps1"
 if not exist "%SCRIPT%" (
     echo.
     echo [ERROR] LicenseServiceToolkit.ps1 was not found.
