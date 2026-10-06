@@ -86,3 +86,10 @@ A PC with a Windows digital entitlement may automatically reactivate after produ
 LicenseLab is for legitimate servicing using licenses, subscriptions, product keys, digital entitlements, and organizational activation infrastructure you are authorized to manage.
 
 It does not contain activation cracks, HWID bypasses, Ohook, TSforge, or unauthorized/public KMS activation.
+
+
+## Portfolio case study
+
+See the problem-solving case study at:
+
+**https://T3ND41.github.io/portfolio/projects/licenselab.html**
